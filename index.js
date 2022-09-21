@@ -23,6 +23,7 @@ async function WebHook() {
       available: product.variants[0].available,
       price: product.variants[0].price,
       image: product.images[0].src,
+      notificationSent: false,
     };
     initialProducts.push(template);
   });
@@ -45,6 +46,20 @@ async function WebHook() {
         ],
       };
 
+      const newProducts = [];
+      response.forEach((product) => {
+        let template = {
+          name: product.title,
+          available: product.variants[0].available,
+          price: product.variants[0].price,
+          image: product.images[0].src,
+          notificationSent: false,
+        };
+        newProducts.push(template);
+      });
+
+      initialProducts = newProducts;
+
       postUpdate(
         `https://discord.com/api/webhooks/${webhookId}/${webhookToken}?wait=true`,
         updates
@@ -54,11 +69,14 @@ async function WebHook() {
       );
       await sleep(10000);
 
-      process.exit(1);
+      // process.exit(1);
     }
 
     for (let i = 0; i < response.length; i++) {
-      if (response[i].variants[0].available != initialProducts[i].available) {
+      if (
+        response[i].variants[0].available != initialProducts[i].available &&
+        !initialProducts[i].notificationSent
+      ) {
         const updates = {
           embeds: [
             {
@@ -77,6 +95,7 @@ async function WebHook() {
           `https://discord.com/api/webhooks/${webhookId}/${webhookToken}?wait=true`,
           updates
         );
+        initialProducts[i].notificationSent = true;
         console.log(`${new Date().toISOString()} Update!`);
         isThereUpdate = true;
       }
